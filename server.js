@@ -25,7 +25,7 @@ function startTracker() {
             "Add Role",
             "View all Departments",
             "Add Department",
-            "All Done"
+            "Exit"
         ],
         message: "What do you want to do?",
         name: "option"
@@ -45,14 +45,27 @@ function startTracker() {
             viewDepartments();
         } else if (data.option == "Add Department") {
             addDepartment();
-        } else if (data.option == "All Done") {
-            allDone();
+        } else if (data.option == "Exit") {
+            console.log("Goodbye");
+            db.end();
         }
     })
 }
 
 function viewEmployees() {
-    db.query("SELECT * FROM employee", function(err,res) {
+    db.query(`SELECT 
+    employee.id AS Id,
+     employee.first_name AS First,
+      employee.last_name AS Last,
+       role.title AS 'Job Title',
+        department.name AS Department,
+         role.salary AS Salary,
+          CONCAT(x.first_name, ' ', x.last_name) AS Manager
+           FROM employee JOIN role ON employee.role_id = role.id 
+           JOIN department ON role.department_id = department.id 
+           LEFT JOIN employee x ON employee.manager_id = x.id
+           ORDER BY employee.id;
+       `, function(err,res) {
         if (err) throw err;
         console.table(res);
         startTracker();
@@ -74,7 +87,7 @@ function addEmployee() {
         {
             type: "number",
             message: "What is the role of the employee you would like to add?",
-            name: "roleid" 
+            name: "roleId" 
         },
         {
             type: "number",
@@ -82,7 +95,7 @@ function addEmployee() {
             name: "managerId"
         }])
         .then(data => {
-        db.query("INSERT INTO employee (first_name, Last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [data.first, data.last, data.roleId, data.managerId], function(err, res) {
+        db.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [data.first, data.last, data.roleId, data.managerId], function(err, res) {
             if (err) throw err;
             console.table(res);
             startTracker();
@@ -112,7 +125,11 @@ function updateEmployee() {
 }
 
 function viewRoles() {
-    db.query("SELECT * FROM role", function(err,res) {
+    db.query(`SELECT role.id AS Id,
+                 role.title AS Title,
+                  role.salary AS Salary,
+                   department.name AS Department
+                    FROM role LEFT JOIN department ON role.department_id = department.id`, function(err,res) {
         if (err) throw err;
         console.table(res);
         startTracker();
@@ -146,7 +163,7 @@ function addRole() {
 }
 
 function viewDepartments() {
-    db.query("SELECT * FROM department", function(err,res) {
+    db.query(`SELECT department.id AS Id, department.name AS Department FROM department`, function(err,res) {
         if (err) throw err;
         console.table(res);
         startTracker();
@@ -166,9 +183,4 @@ function addDepartment() {
             startTracker();
         })
     });
-}
-
-function allDone(){
-    db.end;
-    process.exit;
 }
